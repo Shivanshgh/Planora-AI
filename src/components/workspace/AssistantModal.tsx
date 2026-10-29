@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Bot,
@@ -8,6 +8,8 @@ import {
   Calendar,
   Wallet,
   Users,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import { EventPlan, ChatMessage } from '../../types/event';
 import { apiService } from '../../services/apiService';
@@ -17,28 +19,75 @@ interface AssistantModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: EventPlan | null;
+  onUpdatePlan?: (updatedPlan: EventPlan) => void;
 }
 
 export const AssistantModal: React.FC<AssistantModalProps> = ({
   isOpen,
   onClose,
   plan,
+  onUpdatePlan,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      sender: 'assistant',
-      text: plan
-        ? `Hello! I'm your Planora Event Concierge. I have full context on "${plan.input.name}" (${plan.input.eventType} in ${plan.input.city} with ₹${plan.input.totalBudget.toLocaleString('en-IN')} budget). How can I help you today?`
-        : `Hello! I'm your Planora Event Concierge. Ask me anything about event budgeting, vendors, wedding etiquette, or birthday party schedules!`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const getInitialMessages = (): ChatMessage[] => {
+    if (plan?.chatHistory && plan.chatHistory.length > 0) {
+      return plan.chatHistory;
+    }
+    return [
+      {
+        id: 'welcome',
+        sender: 'assistant',
+        text: plan
+          ? `Hello! I'm your Planora Event Concierge. I have full context on "${plan.input.name}" (${plan.input.eventType} in ${plan.input.city} with ₹${plan.input.totalBudget.toLocaleString('en-IN')} budget). How can I help you today?`
+          : `Hello! I'm your Planora Event Concierge. Ask me anything about event budgeting, vendors, wedding etiquette, or birthday party schedules!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ];
+  };
 
+  const [messages, setMessages] = useState<ChatMessage[]>(getInitialMessages);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync messages when plan changes
+  useEffect(() => {
+    if (isOpen) {
+      setMessages(getInitialMessages());
+    }
+  }, [plan?.id, isOpen]);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   if (!isOpen) return null;
+
+  const updateChatMessages = (newHistory: ChatMessage[]) => {
+    setMessages(newHistory);
+    if (plan && onUpdatePlan) {
+      onUpdatePlan({
+        ...plan,
+        chatHistory: newHistory,
+      });
+    }
+  };
+
+  const handleClearHistory = () => {
+    if (window.confirm('Reset conversation history for this event?')) {
+      const resetMessages: ChatMessage[] = [
+        {
+          id: `welcome-${Date.now()}`,
+          sender: 'assistant',
+          text: plan
+            ? `Conversation reset. I have active context on "${plan.input.name}". How can I help you?`
+            : `Conversation reset. How can I assist you?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ];
+      updateChatMessages(resetMessages);
+    }
+  };
 
   const quickPrompts = [
     'Draft a WhatsApp invitation message',
@@ -58,7 +107,8 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const updatedAfterUser = [...messages, userMsg];
+    updateChatMessages(updatedAfterUser);
     setInputQuestion('');
     setIsLoading(true);
 
@@ -76,7 +126,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
-      setMessages(prev => [...prev, assistantMsg]);
+      updateChatMessages([...updatedAfterUser, assistantMsg]);
     } catch (err: any) {
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
@@ -84,7 +134,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
         text: `Sorry, I encountered an issue: ${err.message || 'Please verify Gemini API key configuration.'}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages(prev => [...prev, errorMsg]);
+      updateChatMessages([...updatedAfterUser, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +155,11 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
                 <span className="text-[10px] font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.2 rounded">
                   AI Contextual
                 </span>
+                {plan?.chatHistory && plan.chatHistory.length > 1 && (
+                  <span className="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded">
+                    History Saved
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400">
                 {plan ? `${plan.input.name} • ${formatINR(plan.input.totalBudget)}` : 'General Event Assistant'}
@@ -112,12 +167,24 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {messages.length > 1 && (
+              <button
+                onClick={handleClearHistory}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
+                title="Clear conversation history"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Chat message history */}
@@ -161,6 +228,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
               <span>Analyzing event context and composing reply...</span>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Quick prompt chips */}

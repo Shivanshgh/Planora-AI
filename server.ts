@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { eventInputSchema } from './src/types/event';
+import { getDefaultRunOfShow } from './src/utils/formatters';
 
 dotenv.config();
 
@@ -511,6 +512,7 @@ Ensure every section is filled with high quality, specific, actionable details.
       },
       budget: normalizedBudget,
       timeline,
+      runOfShow: getDefaultRunOfShow(input.eventType),
       checklist,
       ideas: generated.ideas || {
         themesAndColors: [],

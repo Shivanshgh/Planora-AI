@@ -14,6 +14,7 @@ import {
   DollarSign,
   PieChart,
   HelpCircle,
+  Download,
 } from 'lucide-react';
 import { BudgetItem, EventPlan } from '../../types/event';
 import { formatINR, formatNumberIndian } from '../../utils/formatters';
@@ -52,6 +53,33 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
 
   // Actual spent tracking
   const totalActualSpent = (plan.budget || []).reduce((sum, item) => sum + (Number(item.actualSpent) || 0), 0);
+
+  // Hovered item for interactive chart
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  // Export budget as CSV
+  const handleExportCSV = () => {
+    const headers = ['Category', 'Allocated Amount (INR)', 'Percentage (%)', 'Actual Spent (INR)', 'Explanation', 'Cost Saving Alternative', 'Notes'];
+    const rows = (plan.budget || []).map(item => [
+      `"${(item.category || '').replace(/"/g, '""')}"`,
+      item.allocatedAmount,
+      item.percentage,
+      item.actualSpent || 0,
+      `"${(item.explanation || '').replace(/"/g, '""')}"`,
+      `"${(item.costSavingAlternative || '').replace(/"/g, '""')}"`,
+      `"${(item.notes || '').replace(/"/g, '""')}"`,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${plan.input.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-budget.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Palette colors for budget distribution visualizer
   const categoryColors = [
@@ -209,9 +237,9 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
         </div>
       </div>
 
-      {/* Visual Distribution Chart */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Visual Distribution Chart & Interactive Donut */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <PieChart className="w-5 h-5 text-violet-600" />
             <h3 className="font-bold text-slate-900 text-sm sm:text-base">
@@ -219,47 +247,160 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
             </h3>
           </div>
           <span className="text-xs text-slate-500 font-medium">
-            Per-guest: {formatINR(Math.round(currentAllocated / (plan.input.guestCount || 1)))}
+            Per-guest spend: <strong className="text-slate-900">{formatINR(Math.round(currentAllocated / (plan.input.guestCount || 1)))}</strong> ({plan.input.guestCount} guests)
           </span>
         </div>
 
-        {/* Multi-segment visual bar */}
-        <div className="w-full h-4 rounded-full bg-slate-100 flex overflow-hidden shadow-inner">
-          {plan.budget.map((item, idx) => {
-            const widthPct = totalBudget > 0 ? (item.allocatedAmount / totalBudget) * 100 : 0;
-            if (widthPct <= 0) return null;
-            return (
-              <div
-                key={item.id}
-                style={{
-                  width: `${widthPct}%`,
-                  backgroundColor: categoryColors[idx % categoryColors.length],
-                }}
-                className="h-full hover:opacity-85 transition-opacity relative group cursor-pointer"
-                title={`${item.category}: ${formatINR(item.allocatedAmount)} (${Math.round(widthPct)}%)`}
-              />
-            );
-          })}
+        {/* Donut Chart + Interactive Category Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          {/* SVG Donut Chart */}
+          <div className="md:col-span-5 flex flex-col items-center justify-center">
+            <div className="relative w-52 h-52 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 160 160">
+                {/* Background Track */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="60"
+                  fill="transparent"
+                  stroke="#F1F5F9"
+                  strokeWidth="22"
+                />
+                {(() => {
+                  const radius = 60;
+                  const circ = 2 * Math.PI * radius;
+                  let currentOffset = 0;
+                  return plan.budget.map((item, idx) => {
+                    const pctOfAllocated = currentAllocated > 0 ? item.allocatedAmount / currentAllocated : 0;
+                    const strokeDash = pctOfAllocated * circ;
+                    const dashoffset = -currentOffset;
+                    currentOffset += strokeDash;
+                    const isHovered = hoveredId === item.id;
+                    const isAnyHovered = hoveredId !== null;
+
+                    return (
+                      <circle
+                        key={item.id}
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="transparent"
+                        stroke={categoryColors[idx % categoryColors.length]}
+                        strokeWidth={isHovered ? 26 : 22}
+                        strokeDasharray={`${strokeDash} ${circ - strokeDash}`}
+                        strokeDashoffset={dashoffset}
+                        className="transition-all duration-200 cursor-pointer"
+                        style={{
+                          opacity: isAnyHovered ? (isHovered ? 1 : 0.45) : 1,
+                        }}
+                        onMouseEnter={() => setHoveredId(item.id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                      />
+                    );
+                  });
+                })()}
+              </svg>
+
+              {/* Center Metrics Overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 pointer-events-none">
+                {(() => {
+                  const hoveredItem = plan.budget.find(b => b.id === hoveredId);
+                  if (hoveredItem) {
+                    return (
+                      <>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate max-w-[120px]">
+                          {hoveredItem.category}
+                        </span>
+                        <span className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
+                          {formatINR(hoveredItem.allocatedAmount)}
+                        </span>
+                        <span className="text-[11px] font-semibold text-violet-600">
+                          {hoveredItem.percentage}% of budget
+                        </span>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                        Total Allocated
+                      </span>
+                      <span className="text-lg font-black text-slate-900 mt-0.5">
+                        {formatINR(currentAllocated)}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {plan.budget.length} Categories
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2 text-center">
+              Hover over donut slices or list items to isolate spend
+            </p>
+          </div>
+
+          {/* Interactive Legend & Breakdown Grid */}
+          <div className="md:col-span-7 space-y-2 max-h-64 overflow-y-auto pr-1">
+            {plan.budget.map((item, idx) => {
+              const pct = totalBudget > 0 ? Math.round((item.allocatedAmount / totalBudget) * 100) : 0;
+              const isHovered = hoveredId === item.id;
+              const color = categoryColors[idx % categoryColors.length];
+
+              return (
+                <div
+                  key={item.id}
+                  onMouseEnter={() => setHoveredId(item.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  className={`p-2.5 rounded-xl border text-xs transition-all cursor-pointer flex items-center justify-between ${
+                    isHovered
+                      ? 'bg-violet-50 border-violet-300 shadow-xs'
+                      : 'bg-slate-50/70 border-slate-200/70 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate mr-2">
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0 shadow-2xs"
+                      style={{ backgroundColor: color }}
+                    />
+                    <div className="truncate">
+                      <div className="font-bold text-slate-900 truncate">{item.category}</div>
+                      <div className="text-[10px] text-slate-500 truncate">{item.explanation}</div>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <div className="font-extrabold text-slate-900">{formatINR(item.allocatedAmount)}</div>
+                    <div className="text-[10px] font-semibold text-slate-500">{pct}%</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Legend pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-2">
-          {plan.budget.map((item, idx) => {
-            const pct = totalBudget > 0 ? Math.round((item.allocatedAmount / totalBudget) * 100) : 0;
-            return (
-              <div
-                key={item.id}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-xs"
-              >
+        {/* Multi-segment visual bar */}
+        <div className="space-y-1.5 pt-2 border-t border-slate-100">
+          <div className="w-full h-3 rounded-full bg-slate-100 flex overflow-hidden shadow-inner">
+            {plan.budget.map((item, idx) => {
+              const widthPct = totalBudget > 0 ? (item.allocatedAmount / totalBudget) * 100 : 0;
+              if (widthPct <= 0) return null;
+              return (
                 <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: categoryColors[idx % categoryColors.length] }}
+                  key={item.id}
+                  style={{
+                    width: `${widthPct}%`,
+                    backgroundColor: categoryColors[idx % categoryColors.length],
+                  }}
+                  className="h-full hover:opacity-85 transition-opacity relative group cursor-pointer"
+                  title={`${item.category}: ${formatINR(item.allocatedAmount)} (${Math.round(widthPct)}%)`}
+                  onMouseEnter={() => setHoveredId(item.id)}
+                  onMouseLeave={() => setHoveredId(null)}
                 />
-                <span className="font-medium text-slate-700">{item.category}</span>
-                <span className="text-slate-400 font-mono text-[11px]">{pct}%</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -273,7 +414,16 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
+              title="Download budget as a CSV file for Excel / Google Sheets"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <span>Export CSV</span>
+            </button>
+
             <button
               onClick={() => setIsAdding(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 font-semibold text-xs transition-colors"

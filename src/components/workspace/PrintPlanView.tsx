@@ -195,6 +195,36 @@ export const PrintPlanView: React.FC<PrintPlanViewProps> = ({
           </div>
         </div>
 
+        {/* Section 3B: Day-of Run-of-Show (if present) */}
+        {plan.runOfShow && plan.runOfShow.length > 0 && (
+          <div className="space-y-4 mb-8">
+            <h2 className="text-base font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+              3B. Event Day Run-of-Show (Hourly Operational Schedule)
+            </h2>
+
+            <div className="space-y-2 text-xs">
+              {plan.runOfShow.map((slot, idx) => (
+                <div key={idx} className="p-2.5 border border-slate-200 rounded-lg flex items-start justify-between gap-3 bg-slate-50/50">
+                  <div className="flex items-start gap-2.5">
+                    <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                      {slot.time}
+                    </span>
+                    <div>
+                      <div className="font-bold text-slate-900">{slot.title}</div>
+                      <p className="text-slate-600 text-[11px] mt-0.5">{slot.description}</p>
+                    </div>
+                  </div>
+                  {slot.assignedTo && (
+                    <span className="text-[10px] font-semibold text-slate-500 shrink-0">
+                      Lead: {slot.assignedTo}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Section 4: Vendor Checklist */}
         <div className="space-y-4 mb-8">
           <h2 className="text-base font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">

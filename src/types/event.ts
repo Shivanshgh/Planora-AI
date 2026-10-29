@@ -125,6 +125,15 @@ export interface RiskAndRecommendation {
   actionItem: string;
 }
 
+export interface RunOfShowItem {
+  id: string;
+  time: string; // e.g. "08:00 AM" or "17:30"
+  title: string;
+  description: string;
+  assignedTo?: string; // e.g. "Lead Coordinator", "Photographer", "Family"
+  status: 'pending' | 'in_progress' | 'completed';
+}
+
 export interface EventPlan {
   id: string;
   createdAt: string;
@@ -133,9 +142,11 @@ export interface EventPlan {
   overview: EventOverview;
   budget: BudgetItem[];
   timeline: TimelineTask[];
+  runOfShow?: RunOfShowItem[];
   checklist: VendorItem[];
   ideas: PersonalizedIdeas;
   risks: RiskAndRecommendation[];
+  chatHistory?: ChatMessage[];
   isSample?: boolean;
 }
 

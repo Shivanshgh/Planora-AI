@@ -290,6 +290,7 @@ export default function App() {
         isOpen={isHeaderAssistantOpen}
         onClose={() => setIsHeaderAssistantOpen(false)}
         plan={activePlan}
+        onUpdatePlan={handleUpdatePlan}
       />
 
       {/* Global Print Modal */}

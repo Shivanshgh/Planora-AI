@@ -317,6 +317,7 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
         <TimelineTab
           plan={plan}
           onUpdateTimeline={newTimeline => onUpdatePlan({ ...plan, timeline: newTimeline })}
+          onUpdateRunOfShow={newRunOfShow => onUpdatePlan({ ...plan, runOfShow: newRunOfShow })}
           onRegenerateTimeline={() => handleRegenerateSection('timeline')}
           isRegenerating={isRegeneratingSection === 'timeline'}
         />
@@ -354,6 +355,7 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
         isOpen={isAssistantOpen}
         onClose={() => setIsAssistantOpen(false)}
         plan={plan}
+        onUpdatePlan={onUpdatePlan}
       />
 
       <OptimizeBudgetModal

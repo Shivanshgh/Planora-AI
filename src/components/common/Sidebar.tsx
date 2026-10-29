@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Wallet,
   CheckSquare,
+  Clock,
   Settings,
   PlusCircle,
   X,
@@ -44,14 +45,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
-  // Exact 6 core items requested in specification Section 3:
-  // 1. Dashboard, 2. Plan an Event, 3. My Events, 4. Budget Planner, 5. Timeline & Tasks, 6. Settings
+  // Core navigation items covering all Prompt Wars pillars:
+  // 1. Dashboard, 2. Plan an Event, 3. My Events, 4. Budget Planner, 5. Timeline & Tasks, 6. Vendor Checklist
   const coreNavItems: { id: NavView; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'plan-new', label: 'Plan an Event', icon: PlusCircle },
     { id: 'my-events', label: 'My Events', icon: CalendarDays },
     { id: 'budget', label: 'Budget Planner', icon: Wallet },
-    { id: 'timeline', label: 'Timeline & Tasks', icon: CheckSquare },
+    { id: 'timeline', label: 'Timeline & Tasks', icon: Clock },
+    { id: 'checklist', label: 'Vendor Checklist', icon: CheckSquare },
   ];
 
   const handleNavClick = (view: NavView) => {
