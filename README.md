@@ -96,4 +96,3 @@ server.ts         Express API, Gemini integration, static serving
 - AI endpoints validate bounded request fields, but this public demo does not include API rate limiting; add a provider-aware limiter before exposing a costly AI service broadly.
 - Plans remain in browser local storage. The app does not sync saved data across devices or accounts.
 - Automated tests do not make paid Gemini requests. Verify live generation separately with a valid server-side key and a controlled test event.
-
