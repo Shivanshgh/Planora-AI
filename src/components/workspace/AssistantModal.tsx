@@ -14,6 +14,7 @@ import {
 import { EventPlan, ChatMessage } from '../../types/event';
 import { apiService } from '../../services/apiService';
 import { formatINR } from '../../utils/formatters';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 interface AssistantModalProps {
   isOpen: boolean;
@@ -48,6 +49,8 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  useDialogAccessibility(isOpen, dialogRef, onClose, 'input[aria-label="Ask the event assistant a question"]');
 
   // Sync messages when plan changes
   useEffect(() => {
@@ -127,11 +130,12 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
       };
 
       updateChatMessages([...updatedAfterUser, assistantMsg]);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Please verify Gemini API key configuration.';
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         sender: 'assistant',
-        text: `Sorry, I encountered an issue: ${err.message || 'Please verify Gemini API key configuration.'}`,
+        text: `Sorry, I encountered an issue: ${message}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       updateChatMessages([...updatedAfterUser, errorMsg]);
@@ -142,7 +146,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[640px] max-h-[90vh] overflow-hidden">
+      <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="assistant-dialog-title" className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[640px] max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2.5">
@@ -151,7 +155,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="font-bold text-sm text-white">Planora Event Concierge</h3>
+                <h3 id="assistant-dialog-title" className="font-bold text-sm text-white">Planora Event Concierge</h3>
                 <span className="text-[10px] font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.2 rounded">
                   AI Contextual
                 </span>
@@ -179,6 +183,8 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
             )}
 
             <button
+              type="button"
+              aria-label="Close assistant"
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
@@ -188,7 +194,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
         </div>
 
         {/* Chat message history */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50" role="log" aria-label="Assistant conversation" aria-live="polite" aria-relevant="additions">
           {messages.map(m => {
             const isUser = m.sender === 'user';
             return (
@@ -255,6 +261,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
           className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
         >
           <input
+            aria-label="Ask the event assistant a question"
             type="text"
             value={inputQuestion}
             onChange={e => setInputQuestion(e.target.value)}
@@ -270,7 +277,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
             <span className="hidden sm:inline">Send</span>
           </button>
         </form>
-      </div>
+      </section>
     </div>
   );
 };

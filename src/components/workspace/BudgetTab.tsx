@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { BudgetItem, EventPlan } from '../../types/event';
 import { formatINR, formatNumberIndian } from '../../utils/formatters';
+import { calculateBudgetTotals } from '../../utils/budget';
 
 interface BudgetTabProps {
   plan: EventPlan;
@@ -47,12 +48,13 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
 
   // Calculate real-time totals in app code
   const totalBudget = plan.input.totalBudget;
-  const currentAllocated = (plan.budget || []).reduce((sum, item) => sum + (Number(item.allocatedAmount) || 0), 0);
-  const remainingBudget = totalBudget - currentAllocated;
+  const budgetTotals = calculateBudgetTotals(plan.budget || [], totalBudget);
+  const currentAllocated = budgetTotals.allocated;
+  const remainingBudget = budgetTotals.remaining;
   const isOverBudget = remainingBudget < 0;
 
   // Actual spent tracking
-  const totalActualSpent = (plan.budget || []).reduce((sum, item) => sum + (Number(item.actualSpent) || 0), 0);
+  const totalActualSpent = budgetTotals.spent;
 
   // Hovered item for interactive chart
   const [hoveredId, setHoveredId] = useState<string | null>(null);

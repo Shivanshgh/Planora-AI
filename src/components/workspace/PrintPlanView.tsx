@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Printer,
   X,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { EventPlan } from '../../types/event';
 import { formatINR, formatDate } from '../../utils/formatters';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 interface PrintPlanViewProps {
   plan: EventPlan;
@@ -20,17 +21,20 @@ export const PrintPlanView: React.FC<PrintPlanViewProps> = ({
   plan,
   onClose,
 }) => {
+  const dialogRef = useRef<HTMLElement | null>(null);
+  useDialogAccessibility(true, dialogRef, onClose);
+
   const handlePrint = () => {
     window.print();
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 p-2 sm:p-6 backdrop-blur-xs flex justify-center">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-6 sm:p-10 my-4 text-slate-900 print:m-0 print:p-6 print:shadow-none print:w-full">
+      <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="print-dialog-title" className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-6 sm:p-10 my-4 text-slate-900 print:m-0 print:p-6 print:shadow-none print:w-full">
         {/* Print Bar (hidden when printing) */}
         <div className="no-print flex items-center justify-between pb-6 mb-6 border-b border-slate-200">
           <div>
-            <h3 className="font-bold text-base text-slate-900">
+            <h3 id="print-dialog-title" className="font-bold text-base text-slate-900">
               Printable Master Plan Document
             </h3>
             <p className="text-xs text-slate-500">
@@ -47,6 +51,8 @@ export const PrintPlanView: React.FC<PrintPlanViewProps> = ({
               <span>Print / Save as PDF</span>
             </button>
             <button
+              type="button"
+              aria-label="Close print preview"
               onClick={onClose}
               className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100"
             >
@@ -265,7 +271,7 @@ export const PrintPlanView: React.FC<PrintPlanViewProps> = ({
         <div className="pt-6 border-t border-slate-200 text-center text-[11px] text-slate-400">
           Planora AI Event Assistant • Your event. Your budget. Your perfect plan.
         </div>
-      </div>
+      </section>
     </div>
   );
 };

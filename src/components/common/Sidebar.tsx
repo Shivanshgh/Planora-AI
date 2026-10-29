@@ -65,9 +65,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex flex-col h-full bg-slate-900 text-slate-200 border-r border-slate-800">
       {/* Brand Logo & Name */}
       <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-        <div
+        <button
+          type="button"
+          aria-label="Planora dashboard"
           onClick={() => handleNavClick('dashboard')}
-          className="flex items-center gap-3 cursor-pointer group"
+          className="flex items-center gap-3 cursor-pointer group text-left"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-indigo-900/30 group-hover:scale-105 transition-transform">
             <Sparkles className="w-5 h-5 text-violet-200" />
@@ -81,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <p className="text-[11px] text-slate-400 font-medium">Your event. Your budget.</p>
           </div>
-        </div>
+        </button>
         {isOpenMobile && (
           <button
             onClick={onCloseMobile}
@@ -98,13 +100,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
             Navigation
           </div>
-          <nav className="space-y-1">
+          <nav aria-label="Main navigation" className="space-y-1">
             {coreNavItems.map(item => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
               return (
                 <button
                   key={item.id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() => handleNavClick(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
@@ -130,9 +134,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
             </div>
 
-            <div
+            <button
+              type="button"
               onClick={() => handleNavClick('my-events')}
-              className="px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60 hover:border-violet-500/50 cursor-pointer transition-all mb-2 group"
+              className="w-full text-left px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60 hover:border-violet-500/50 cursor-pointer transition-all mb-2 group"
             >
               <div className="font-semibold text-xs text-white truncate group-hover:text-violet-300" title={activePlan.input.name}>
                 {activePlan.input.name}
@@ -143,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {formatINR(activePlan.input.totalBudget)}
                 </span>
               </div>
-            </div>
+            </button>
 
             <button
               onClick={() => handleNavClick('ideas')}

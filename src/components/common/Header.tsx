@@ -86,14 +86,14 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Gemini status pill */}
         <div
           className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
-          title={hasApiKey ? 'Gemini 3.8 Flash online' : 'Gemini API key needed'}
+          title={hasApiKey ? 'A Gemini key is configured on the server; live access is confirmed when a request succeeds.' : 'Gemini key needed for live AI requests'}
         >
           <Circle
             className={`w-2 h-2 fill-current ${
               hasApiKey ? 'text-emerald-500' : 'text-amber-500'
             }`}
           />
-          <span>Gemini 3.8 Flash</span>
+          <span>{hasApiKey ? 'Gemini configured' : 'Sample mode'}</span>
         </div>
 
         {/* AI Assistant button */}

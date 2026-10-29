@@ -216,7 +216,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 type="button"
                 onClick={() => {
                   if (s.num === 1 || validateStep1()) {
-                    setStep(s.num as any);
+                    setStep(s.num as 1 | 2 | 3);
                   }
                 }}
                 className={`flex items-center gap-3 text-left transition-all ${
@@ -248,7 +248,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         {/* Error notification if any */}
         {error && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs sm:text-sm space-y-3">
+          <div role="alert" aria-live="assertive" className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs sm:text-sm space-y-3">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -293,6 +293,8 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Event Name <span className="text-red-500">*</span>
               </label>
               <input
+                aria-label="Event name"
+                aria-invalid={Boolean(validationErrors.name)}
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -304,7 +306,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 }`}
               />
               {validationErrors.name && (
-                <p className="text-xs text-red-600 mt-1">{validationErrors.name}</p>
+                <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.name}</p>
               )}
             </div>
 
@@ -336,10 +338,12 @@ export const EventForm: React.FC<EventFormProps> = ({
                 ].map(item => {
                   const isSelected = eventType === item.id;
                   return (
-                    <div
+                    <button
+                      type="button"
+                      aria-pressed={isSelected}
                       key={item.id}
                       onClick={() => setEventType(item.id as EventType)}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      className={`w-full text-left p-4 rounded-xl border cursor-pointer transition-all ${
                         isSelected
                           ? 'border-violet-600 bg-violet-50/50 ring-2 ring-violet-500/20'
                           : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
@@ -348,7 +352,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       <div className="text-2xl mb-1">{item.icon}</div>
                       <div className="font-bold text-sm text-slate-900">{item.title}</div>
                       <div className="text-xs text-slate-500 mt-0.5">{item.desc}</div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -362,6 +366,8 @@ export const EventForm: React.FC<EventFormProps> = ({
                 </label>
                 <div className="relative">
                   <input
+                    aria-label="Target event date"
+                    aria-invalid={Boolean(validationErrors.date)}
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
@@ -369,7 +375,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   />
                 </div>
                 {validationErrors.date && (
-                  <p className="text-xs text-red-600 mt-1">{validationErrors.date}</p>
+                  <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.date}</p>
                 )}
               </div>
 
@@ -379,6 +385,8 @@ export const EventForm: React.FC<EventFormProps> = ({
                 </label>
                 <div className="relative">
                   <input
+                    aria-label="City or event location"
+                    aria-invalid={Boolean(validationErrors.city)}
                     type="text"
                     value={city}
                     onChange={e => setCity(e.target.value)}
@@ -387,7 +395,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   />
                 </div>
                 {validationErrors.city && (
-                  <p className="text-xs text-red-600 mt-1">{validationErrors.city}</p>
+                  <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.city}</p>
                 )}
               </div>
 
@@ -396,6 +404,8 @@ export const EventForm: React.FC<EventFormProps> = ({
                   Estimated Guests <span className="text-red-500">*</span>
                 </label>
                 <input
+                  aria-label="Estimated guest count"
+                  aria-invalid={Boolean(validationErrors.guestCount)}
                   type="number"
                   min="5"
                   max="10000"
@@ -404,7 +414,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                 />
                 {validationErrors.guestCount && (
-                  <p className="text-xs text-red-600 mt-1">{validationErrors.guestCount}</p>
+                  <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.guestCount}</p>
                 )}
               </div>
             </div>
@@ -421,6 +431,8 @@ export const EventForm: React.FC<EventFormProps> = ({
               </div>
 
               <input
+                aria-label="Total event budget in Indian rupees"
+                aria-invalid={Boolean(validationErrors.totalBudget)}
                 type="number"
                 min="5000"
                 step="5000"
@@ -475,6 +487,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   Event Duration (Hours)
                 </label>
                 <input
+                  aria-label="Event duration in hours"
                   type="number"
                   min="1"
                   max="48"
@@ -489,6 +502,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   Venue Setting
                 </label>
                 <select
+                  aria-label="Venue setting"
                   value={setting}
                   onChange={e => setSetting(e.target.value as SettingType)}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
@@ -507,6 +521,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Preferred Theme / Visual Mood
               </label>
               <input
+                aria-label="Preferred event theme"
                 type="text"
                 value={theme}
                 onChange={e => setTheme(e.target.value)}
@@ -524,6 +539,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Dietary & Catering Preferences
               </label>
               <textarea
+                aria-label="Dietary and catering preferences"
                 rows={2}
                 value={dietary}
                 onChange={e => setDietary(e.target.value)}
@@ -539,6 +555,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   Cultural or Regional Preferences
                 </label>
                 <input
+                    aria-label="Cultural or regional preferences"
                   type="text"
                   value={cultural}
                   onChange={e => setCultural(e.target.value)}
@@ -552,6 +569,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   Communication Language & Tone
                 </label>
                 <input
+                    aria-label="Communication language and tone"
                   type="text"
                   value={language}
                   onChange={e => setLanguage(e.target.value)}
@@ -571,6 +589,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Must-Have Activities & Highlights
               </label>
               <textarea
+                aria-label="Must-have activities and highlights"
                 rows={2}
                 value={mustHaveActivities}
                 onChange={e => setMustHaveActivities(e.target.value)}
@@ -584,6 +603,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Special Requirements & Inclusivity
               </label>
               <textarea
+                aria-label="Special requirements and accessibility needs"
                 rows={2}
                 value={specialRequirements}
                 onChange={e => setSpecialRequirements(e.target.value)}
@@ -617,10 +637,12 @@ export const EventForm: React.FC<EventFormProps> = ({
                 ].map(opt => {
                   const isSelected = budgetFlexibility === opt.id;
                   return (
-                    <div
+                    <button
+                      type="button"
+                      aria-pressed={isSelected}
                       key={opt.id}
                       onClick={() => setBudgetFlexibility(opt.id as BudgetFlexibility)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-all ${
                         isSelected
                           ? 'border-violet-600 bg-violet-50/50 ring-2 ring-violet-500/20'
                           : 'border-slate-200 hover:border-slate-300'
@@ -628,7 +650,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                     >
                       <div className="font-bold text-xs text-slate-900">{opt.title}</div>
                       <div className="text-[11px] text-slate-500 mt-1">{opt.desc}</div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -653,7 +675,7 @@ export const EventForm: React.FC<EventFormProps> = ({
             {step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((step - 1) as any)}
+                onClick={() => setStep((step - 1) as 1 | 2 | 3)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -676,7 +698,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 type="button"
                 onClick={() => {
                   if (validateStep1()) {
-                    setStep((step + 1) as any);
+                    setStep((step + 1) as 1 | 2 | 3);
                   }
                 }}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-colors"

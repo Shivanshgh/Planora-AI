@@ -423,7 +423,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                 <div className="flex gap-2">
                   <select
                     value={newPriority}
-                    onChange={e => setNewPriority(e.target.value as any)}
+                    onChange={e => setNewPriority(e.target.value as TimelineTask['priority'])}
                     className="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-violet-500"
                   >
                     <option value="high">High Priority</option>

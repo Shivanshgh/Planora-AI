@@ -43,8 +43,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setStatusMessage({ text: 'Successfully exported event data JSON.', type: 'success' });
-    } catch (err: any) {
-      setStatusMessage({ text: `Export failed: ${err.message}`, type: 'error' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      setStatusMessage({ text: `Export failed: ${message}`, type: 'error' });
     }
   };
 
@@ -101,6 +102,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         {statusMessage && (
           <div
+            role={statusMessage.type === 'error' ? 'alert' : 'status'}
+            aria-live={statusMessage.type === 'error' ? 'assertive' : 'polite'}
             className={`mt-4 p-3 rounded-xl border text-xs flex items-center gap-2 ${
               statusMessage.type === 'success'
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -127,7 +130,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
             <span className="text-slate-400 font-medium">Model Architecture</span>
-            <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+            <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5" role="status">
               <Sparkles className="w-3.5 h-3.5 text-violet-600" />
               <span>Google Gemini 3.8 Flash</span>
             </div>
@@ -144,10 +147,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   hasApiKey ? 'bg-emerald-500' : 'bg-amber-500'
                 }`}
               />
-              <span>{hasApiKey ? 'Connected & Active' : 'Fallback / Awaiting Key'}</span>
+              <span>{hasApiKey ? 'Key configured' : 'Key not configured'}</span>
             </div>
             <p className="text-[11px] text-slate-500">
-              Managed securely in server environment (.env)
+              Configuration is present; the first live AI request verifies access.
             </p>
           </div>
         </div>

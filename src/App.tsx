@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import confetti from 'canvas-confetti';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { Sidebar, NavView } from './components/common/Sidebar';
 import { Header } from './components/common/Header';
-import { Dashboard } from './components/dashboard/Dashboard';
-import { EventForm } from './components/planner/EventForm';
-import { EventWorkspace, WorkspaceTab } from './components/workspace/EventWorkspace';
-import { MyEventsView } from './components/workspace/MyEventsView';
-import { SettingsView } from './components/settings/SettingsView';
-import { AssistantModal } from './components/workspace/AssistantModal';
-import { PrintPlanView } from './components/workspace/PrintPlanView';
-import { EventPlan, EventInput } from './types/event';
+import type { WorkspaceTab } from './components/workspace/EventWorkspace';
+import type { EventPlan, EventInput } from './types/event';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
 import { SAMPLE_WEDDING_PLAN } from './utils/sampleData';
+
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard').then(module => ({ default: module.Dashboard })));
+const EventForm = lazy(() => import('./components/planner/EventForm').then(module => ({ default: module.EventForm })));
+const EventWorkspace = lazy(() => import('./components/workspace/EventWorkspace').then(module => ({ default: module.EventWorkspace })));
+const MyEventsView = lazy(() => import('./components/workspace/MyEventsView').then(module => ({ default: module.MyEventsView })));
+const SettingsView = lazy(() => import('./components/settings/SettingsView').then(module => ({ default: module.SettingsView })));
+const AssistantModal = lazy(() => import('./components/workspace/AssistantModal').then(module => ({ default: module.AssistantModal })));
+const PrintPlanView = lazy(() => import('./components/workspace/PrintPlanView').then(module => ({ default: module.PrintPlanView })));
 
 export default function App() {
   const [currentView, setCurrentView] = useState<NavView>('dashboard');
@@ -68,6 +69,7 @@ export default function App() {
 
       // Celebration confetti
       try {
+        const { default: confetti } = await import('canvas-confetti');
         confetti({
           particleCount: 90,
           spread: 70,
@@ -77,13 +79,15 @@ export default function App() {
       } catch {
         // ignore if not supported
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Plan creation error:', err);
-      let errMsg = err.message || 'Failed to generate event plan using Gemini AI.';
-      if (err.status === 503 || errMsg.includes('API key')) {
-        errMsg += ' (Note: You can explore or duplicate the pre-loaded sample plans while the API key is being configured).';
+      const errMsg = err instanceof Error ? err.message : 'Failed to generate event plan using Gemini AI.';
+      const status = typeof err === 'object' && err !== null && 'status' in err ? err.status : undefined;
+      let displayMessage = errMsg;
+      if (status === 503 || errMsg.includes('API key')) {
+        displayMessage += ' (Note: You can explore or duplicate the pre-loaded sample plans while the API key is being configured).';
       }
-      setError(errMsg);
+      setError(displayMessage);
     } finally {
       setIsLoading(false);
     }
@@ -247,6 +251,9 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 selection:bg-violet-100 selection:text-violet-900">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-slate-900 focus:shadow-lg">
+        Skip to main content
+      </a>
       {/* Persistent Sidebar */}
       <Sidebar
         currentView={currentView}
@@ -280,26 +287,34 @@ export default function App() {
           hasApiKey={hasApiKey}
         />
 
-        <main className="flex-1 pb-16">
-          {renderCurrentView()}
+        <main id="main-content" tabIndex={-1} className="flex-1 pb-16">
+          <Suspense fallback={<div className="p-8 text-sm text-slate-600" role="status">Loading planner…</div>}>
+            {renderCurrentView()}
+          </Suspense>
         </main>
       </div>
 
       {/* Header-triggered Global Assistant */}
-      <AssistantModal
-        isOpen={isHeaderAssistantOpen}
-        onClose={() => setIsHeaderAssistantOpen(false)}
-        plan={activePlan}
-        onUpdatePlan={handleUpdatePlan}
-      />
+      <Suspense fallback={null}>
+        {isHeaderAssistantOpen && (
+          <AssistantModal
+            isOpen={isHeaderAssistantOpen}
+            onClose={() => setIsHeaderAssistantOpen(false)}
+            plan={activePlan}
+            onUpdatePlan={handleUpdatePlan}
+          />
+        )}
+      </Suspense>
 
       {/* Global Print Modal */}
-      {isPrintModalOpen && activePlan && (
-        <PrintPlanView
-          plan={activePlan}
-          onClose={() => setIsPrintModalOpen(false)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {isPrintModalOpen && activePlan && (
+          <PrintPlanView
+            plan={activePlan}
+            onClose={() => setIsPrintModalOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

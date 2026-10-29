@@ -184,6 +184,7 @@ export const ChecklistTab: React.FC<ChecklistTabProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input
+              aria-label="Vendor category"
               type="text"
               placeholder="Vendor Category (e.g. Florist, Sound, Caterer)"
               value={newCategory}
@@ -192,6 +193,7 @@ export const ChecklistTab: React.FC<ChecklistTabProps> = ({
               className="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-violet-500"
             />
             <input
+              aria-label="Vendor checklist task"
               type="text"
               placeholder="Action Task / Specification"
               value={newTask}
@@ -203,6 +205,7 @@ export const ChecklistTab: React.FC<ChecklistTabProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input
+              aria-label="Vendor notes and requirements"
               type="text"
               placeholder="Notes, requirements, or terms"
               value={newNotes}
@@ -210,12 +213,14 @@ export const ChecklistTab: React.FC<ChecklistTabProps> = ({
               className="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-violet-500"
             />
             <input
+              aria-label="Vendor task deadline"
               type="date"
               value={newDeadline}
               onChange={e => setNewDeadline(e.target.value)}
               className="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-violet-500"
             />
             <input
+              aria-label="Estimated vendor cost in Indian rupees"
               type="number"
               placeholder="Estimated cost (INR)"
               value={newEstimatedCost || ''}
@@ -268,7 +273,8 @@ export const ChecklistTab: React.FC<ChecklistTabProps> = ({
                   {/* Status Dropdown */}
                   <select
                     value={item.status}
-                    onChange={e => handleStatusChange(item.id, e.target.value as any)}
+                    aria-label={`Status for ${item.task}`}
+                    onChange={e => handleStatusChange(item.id, e.target.value as VendorItem['status'])}
                     className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${
                       isDone
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'

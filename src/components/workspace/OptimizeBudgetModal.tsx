@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   X,
   TrendingDown,
@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import { EventPlan, BudgetItem } from '../../types/event';
 import { apiService } from '../../services/apiService';
+import type { BudgetOptimizationResult } from '../../services/apiService';
 import { formatINR } from '../../utils/formatters';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 interface OptimizeBudgetModalProps {
   isOpen: boolean;
@@ -27,8 +29,10 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
 }) => {
   const [savingsTarget, setSavingsTarget] = useState<number>(15);
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<BudgetOptimizationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  useDialogAccessibility(isOpen, dialogRef, onClose);
 
   if (!isOpen) return null;
 
@@ -38,8 +42,8 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
     try {
       const data = await apiService.optimizeBudget(plan, savingsTarget);
       setResult(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to optimize budget');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to optimize budget');
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +55,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
     // Map recommended amounts to existing budget items
     let updated = plan.budget.map(item => {
       const match = result.recommendedBudget.find(
-        (r: any) => r.category.toLowerCase() === item.category.toLowerCase()
+        recommendation => recommendation.category.toLowerCase() === item.category.toLowerCase()
       );
       if (match && typeof match.proposedAmount === 'number') {
         return {
@@ -114,7 +118,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
+      <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="budget-dialog-title" className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-5 bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -122,7 +126,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
               <TrendingDown className="w-5 h-5 text-emerald-100" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Optimize My Event Budget</h3>
+              <h3 id="budget-dialog-title" className="font-bold text-base text-white">Optimize My Event Budget</h3>
               <p className="text-xs text-slate-300">
                 AI financial auditor to trim unnecessary costs while protecting core guest experience
               </p>
@@ -130,6 +134,8 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
           </div>
 
           <button
+            type="button"
+            aria-label="Close budget optimizer"
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
@@ -226,7 +232,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
                     Recommended Reallocations
                   </h4>
                   <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
-                    {result.recommendedBudget.map((rec: any, idx: number) => (
+                    {result.recommendedBudget.map((rec, idx) => (
                       <div key={idx} className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50">
                         <div>
                           <div className="font-bold text-slate-900">{rec.category}</div>
@@ -271,7 +277,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
             </button>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

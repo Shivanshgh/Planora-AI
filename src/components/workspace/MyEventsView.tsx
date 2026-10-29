@@ -140,7 +140,8 @@ export const MyEventsView: React.FC<MyEventsViewProps> = ({
           <span className="text-xs text-slate-400 shrink-0">Sort by:</span>
           <select
             value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
+            aria-label="Sort saved events"
+            onChange={e => setSortBy(e.target.value as 'date' | 'budget' | 'name')}
             className="text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-violet-500"
           >
             <option value="date">Date (Earliest first)</option>

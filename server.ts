@@ -3,6 +3,7 @@ import type { NextFunction } from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
+import type { Schema } from '@google/genai';
 import { z } from 'zod';
 import { eventInputSchema } from './src/types/event';
 import { getDefaultRunOfShow } from './src/utils/formatters';
@@ -128,7 +129,7 @@ function sendInvalidRequest(res: Response, details: unknown): void {
   res.status(400).json({ error: 'Invalid request data.', details });
 }
 
-function normalizeBudgetItems(rawBudget: any[], totalBudget: number): any[] {
+function normalizeBudgetItems(rawBudget: z.infer<typeof generatedBudgetSchema>, totalBudget: number) {
   if (rawBudget.length === 0 || rawBudget.some(item =>
     !Number.isFinite(Number(item.allocatedAmount)) || Number(item.allocatedAmount) < 0
   )) {
@@ -173,6 +174,11 @@ function isValidISODate(value: unknown): value is string {
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+function normalizePriority(value: string): 'high' | 'medium' | 'low' {
+  const normalized = value.toLowerCase();
+  return normalized === 'high' || normalized === 'low' ? normalized : 'medium';
+}
+
 function logGeminiFailure(operation: string, error: unknown): void {
   console.error(`${operation} failed:`, error instanceof Error ? error.name : 'Unknown error');
 }
@@ -194,8 +200,14 @@ function getAIClient(): GoogleGenAI | null {
 }
 
 // Clean error message parser for nested Gemini API errors
-function formatGeminiErrorMessage(error: any): string {
-  const status = String(error?.status ?? error?.code ?? error?.error?.code ?? '');
+function errorRecord(error: unknown): Record<string, unknown> {
+  return typeof error === 'object' && error !== null ? error as Record<string, unknown> : {};
+}
+
+function formatGeminiErrorMessage(error: unknown): string {
+  const record = errorRecord(error);
+  const nested = errorRecord(record.error);
+  const status = String(record.status ?? record.code ?? nested.code ?? '');
   if (status === '401' || status === '403') return 'Gemini rejected the server API key. Check the configured GEMINI_API_KEY.';
   if (status === '429' || status === 'RESOURCE_EXHAUSTED') return 'Gemini API rate limit reached. Please wait a moment and retry.';
   if (status === '503' || status === 'UNAVAILABLE') {
@@ -209,13 +221,14 @@ function formatGeminiErrorMessage(error: any): string {
 
 // Automatic retry with backoff for transient errors
 async function callGeminiWithRetry<T>(fn: () => Promise<T>, maxRetries = 2, delayMs = 1500): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (err: any) {
+    } catch (err: unknown) {
       lastError = err;
-      const status = String(err?.status ?? err?.code ?? err?.error?.code ?? '');
+      const record = errorRecord(err);
+      const status = String(record.status ?? record.code ?? errorRecord(record.error).code ?? '');
       const isTransient = status === '503' || status === 'UNAVAILABLE' || status === '429' || status === 'RESOURCE_EXHAUSTED';
       if (attempt < maxRetries && isTransient) {
         console.log(`Gemini transient error on attempt ${attempt + 1}/${maxRetries + 1}. Retrying in ${delayMs}ms...`);
@@ -442,7 +455,7 @@ Generate a comprehensive, bespoke event plan for the following event specificati
 Ensure every section is filled with high quality, specific, actionable details.
 `;
 
-    const response: any = await callGeminiWithRetry(() =>
+    const response = await callGeminiWithRetry(() =>
       ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: userPrompt,
@@ -465,32 +478,32 @@ Ensure every section is filled with high quality, specific, actionable details.
     const normalizedBudget = normalizeBudgetItems(generated.budget, input.totalBudget);
 
     // Attach unique IDs and default statuses to timeline, checklist, risks
-    const timeline = (Array.isArray(generated.timeline) ? generated.timeline : []).map((t: any, idx: number) => ({
+    const timeline = generated.timeline.map((t, idx) => ({
       id: `t-${idx + 1}-${Date.now().toString(36)}`,
       title: t.title || 'Event Milestone',
       description: t.description || '',
       suggestedDeadline: t.suggestedDeadline || '',
       dueDate: isValidISODate(t.dueDate) ? t.dueDate : input.date,
-      priority: ['high', 'medium', 'low'].includes(t.priority?.toLowerCase()) ? t.priority.toLowerCase() : 'medium',
+      priority: normalizePriority(t.priority),
       status: 'pending' as const,
       category: t.category || 'General',
     }));
 
-    const checklist = (Array.isArray(generated.checklist) ? generated.checklist : []).map((c: any, idx: number) => ({
+    const checklist = generated.checklist.map((c, idx) => ({
       id: `c-${idx + 1}-${Date.now().toString(36)}`,
       category: c.category || 'Vendor',
       task: c.task || 'Vendor task',
       notes: c.notes || '',
-      priority: ['high', 'medium', 'low'].includes(c.priority?.toLowerCase()) ? c.priority.toLowerCase() : 'medium',
+      priority: normalizePriority(c.priority),
       deadline: isValidISODate(c.deadline) ? c.deadline : input.date,
       status: 'not_started' as const,
       estimatedCost: Number(c.estimatedCost) || 0,
     }));
 
-    const risks = (Array.isArray(generated.risks) ? generated.risks : []).map((r: any, idx: number) => ({
+    const risks = generated.risks.map((r, idx) => ({
       id: `r-${idx + 1}-${Date.now().toString(36)}`,
       risk: r.risk || 'General Risk',
-      severity: ['high', 'medium', 'low'].includes(r.severity?.toLowerCase()) ? r.severity.toLowerCase() : 'medium',
+      severity: normalizePriority(r.severity),
       recommendation: r.recommendation || '',
       actionItem: r.actionItem || '',
     }));
@@ -529,7 +542,7 @@ Ensure every section is filled with high quality, specific, actionable details.
     };
 
     res.json(fullPlan);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logGeminiFailure('Plan generation', error);
     res.status(500).json({ error: formatGeminiErrorMessage(error) });
   }
@@ -551,7 +564,7 @@ app.post('/api/events/regenerate-section', async (req: Request, res: Response): 
       return;
     }
 
-    let sectionSchema: any;
+    let sectionSchema: Schema;
     let promptGoal = '';
 
     if (section === 'budget') {
@@ -611,7 +624,7 @@ Return only valid JSON matching the schema.
         ...item,
         id: `t-${index + 1}-${idSuffix}`,
         dueDate: isValidISODate(item.dueDate) ? item.dueDate : eventInput.date,
-        priority: ['high', 'medium', 'low'].includes(item.priority?.toLowerCase()) ? item.priority.toLowerCase() : 'medium',
+        priority: normalizePriority(item.priority),
         status: 'pending' as const,
       }));
     } else if (section === 'checklist') {
@@ -619,7 +632,7 @@ Return only valid JSON matching the schema.
         ...item,
         id: `c-${index + 1}-${idSuffix}`,
         deadline: isValidISODate(item.deadline) ? item.deadline : eventInput.date,
-        priority: ['high', 'medium', 'low'].includes(item.priority?.toLowerCase()) ? item.priority.toLowerCase() : 'medium',
+        priority: normalizePriority(item.priority),
         estimatedCost: Number.isFinite(Number(item.estimatedCost)) && Number(item.estimatedCost) >= 0 ? Number(item.estimatedCost) : 0,
         status: 'not_started' as const,
       }));
@@ -627,14 +640,14 @@ Return only valid JSON matching the schema.
       normalizedResult = generatedRisksSchema.parse(result).map((item, index) => ({
         ...item,
         id: `r-${index + 1}-${idSuffix}`,
-        severity: ['high', 'medium', 'low'].includes(item.severity?.toLowerCase()) ? item.severity.toLowerCase() : 'medium',
+        severity: normalizePriority(item.severity),
       }));
     } else {
       normalizedResult = generatedIdeasSchema.parse(result);
     }
 
     res.json({ section, data: normalizedResult });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logGeminiFailure('Section regeneration', error);
     res.status(500).json({ error: formatGeminiErrorMessage(error) });
   }
@@ -661,7 +674,7 @@ Act as a master event financial auditor. Review this event plan and propose conc
 
 Event: "${plan.input.name}" (${plan.input.eventType}) in ${plan.input.city} for ${plan.input.guestCount} guests.
 Current Budget: ₹${plan.input.totalBudget} INR.
-Current Allocations: ${JSON.stringify(plan.budget.map((b: any) => ({ category: b.category, amount: b.allocatedAmount })))}
+Current Allocations: ${JSON.stringify(plan.budget.map(b => ({ category: b.category, amount: b.allocatedAmount })))}
 
 Return a JSON object with:
 1. "strategicAdvice": string (summary of 3-4 key tactical savings)
@@ -706,7 +719,7 @@ Return a JSON object with:
     const responseText = response.text;
     if (!responseText) throw new Error('Empty response from model');
     res.json(optimizedResponseSchema.parse(JSON.parse(responseText)));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logGeminiFailure('Budget optimization', error);
     res.status(500).json({ error: formatGeminiErrorMessage(error) });
   }
@@ -783,7 +796,7 @@ Return a JSON object with:
     const responseText = response.text;
     if (!responseText) throw new Error('Empty response from model');
     res.json(creativeResponseSchema.parse(JSON.parse(responseText)));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logGeminiFailure('Creative ideas', error);
     res.status(500).json({ error: formatGeminiErrorMessage(error) });
   }
@@ -814,8 +827,8 @@ CURRENT EVENT DETAILS:
 - Guests: ${plan.input.guestCount}
 - Budget: ₹${plan.input.totalBudget.toLocaleString('en-IN')} INR
 - Theme: ${plan.overview?.recommendedTheme || plan.input.theme || 'Custom'}
-- Allocations: ${plan.budget?.map((b: any) => `${b.category}: ₹${b.allocatedAmount}`).join(', ')}
-- Pending tasks: ${plan.timeline?.filter((t: any) => t.status !== 'completed').map((t: any) => t.title).join('; ')}
+- Allocations: ${plan.budget?.map(b => `${b.category}: ₹${b.allocatedAmount}`).join(', ')}
+- Pending tasks: ${plan.timeline?.filter(t => t.status !== 'completed').map(t => t.title).join('; ')}
 `
       : 'No specific event plan currently open.';
 
@@ -836,7 +849,7 @@ Keep your response concise, polite, well-structured with bullet points where app
       .map(message => message.text)
       .join('\n');
     const chatContents = [{
-      role: 'user',
+      role: 'user' as const,
       parts: [{
         text: `${eventContext}\n\nRECENT USER QUESTIONS:\n${priorQuestions || 'None'}\n\nCURRENT USER QUESTION:\n${userQuestion}`,
       }],
@@ -845,7 +858,7 @@ Keep your response concise, polite, well-structured with bullet points where app
     const response = await callGeminiWithRetry(() =>
       ai.models.generateContent({
         model: 'gemini-3.8-flash',
-        contents: chatContents as any,
+        contents: chatContents,
         config: {
           systemInstruction,
         },
@@ -855,7 +868,7 @@ Keep your response concise, polite, well-structured with bullet points where app
     const reply = response.text?.trim();
     if (!reply) throw new Error('Empty response from model');
     res.json({ reply });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logGeminiFailure('Event assistant', error);
     res.status(500).json({ error: formatGeminiErrorMessage(error) });
   }
@@ -867,13 +880,14 @@ app.use('/api', (_req: Request, res: Response) => {
 });
 
 // Convert parser failures to bounded JSON errors without exposing internals.
-app.use((error: any, _req: Request, res: Response, _next: NextFunction) => {
+app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (res.headersSent) return;
-  if (error?.type === 'entity.parse.failed') {
+  const errorType = errorRecord(error).type;
+  if (errorType === 'entity.parse.failed') {
     res.status(400).json({ error: 'Request body must contain valid JSON.' });
     return;
   }
-  if (error?.type === 'entity.too.large') {
+  if (errorType === 'entity.too.large') {
     res.status(413).json({ error: 'Request body is too large.' });
     return;
   }

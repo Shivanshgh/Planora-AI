@@ -53,7 +53,7 @@ bun run dev
 # TypeScript check
 bun run lint
 
-# Schema validation tests
+# Input, budget calculation, browser persistence, and API error contract tests
 bun run test
 
 # Build the frontend into dist/
@@ -73,7 +73,11 @@ Use a Render **Web Service** with the Node runtime; a static site cannot run the
 2. Enter a valid Gemini key when Render prompts for `GEMINI_API_KEY`.
 3. After deploy, confirm `/api/health` and the app page load. Then test Gemini generation with a valid key.
 
-The service must install dependencies including `tsx`, because the current production start script runs `server.ts` directly. Render supplies the public URL and forwards requests to the Express process, which binds to `0.0.0.0` and serves both the API and built frontend. Deployment and public publishing have not been performed from this workspace.
+The service must install dependencies including `tsx`, because the current production start script runs `server.ts` directly. Render supplies the public URL and forwards requests to the Express process, which binds to `0.0.0.0` and serves both the API and built frontend.
+
+## Verification
+
+Run `bun run test`, `bun run lint`, and `bun run build` before submitting changes. The tests cover request validation, budget totals, browser storage create/update/duplicate/delete and import/export behavior, and API error handling. They do not call Gemini or verify an external API key. Keep a record of the command output for the submitted revision, and manually check the live app's create-plan, edit, save, refresh, and reopen flows with a working Gemini key.
 
 ## Repository layout
 
@@ -90,8 +94,8 @@ server.ts         Express API, Gemini integration, static serving
 - Saved events exist only in the current browser profile; there is no account or cloud sync.
 - Live Gemini behavior requires a valid key and network access and has not been verified without credentials.
 - AI endpoints validate bounded request fields, but this public demo does not include API rate limiting; add a provider-aware limiter before exposing a costly AI service broadly.
-- The checked-in folder currently has no `.git` directory, so tracked-file/secret inspection and a GitHub repository size check require the original Git checkout.
-- The available environment did not include Bun, npm, installed dependencies, or a package lock for npm, so build and runtime commands need to be run in an environment with the project's dependencies installed.
+- Plans remain in browser local storage. The app does not sync saved data across devices or accounts.
+- Automated tests do not make paid Gemini requests. Verify live generation separately with a valid server-side key and a controlled test event.
 
 ## Walkthrough demo script (about 3:30)
 

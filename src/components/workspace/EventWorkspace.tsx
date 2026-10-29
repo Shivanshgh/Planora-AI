@@ -102,12 +102,13 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
       } else if (section === 'checklist' && Array.isArray(refreshedData)) {
         onUpdatePlan({ ...plan, checklist: refreshedData });
       } else if (section === 'ideas' && refreshedData) {
-        onUpdatePlan({ ...plan, ideas: refreshedData });
+        onUpdatePlan({ ...plan, ideas: refreshedData as PersonalizedIdeas });
       } else if (section === 'risks' && Array.isArray(refreshedData)) {
         onUpdatePlan({ ...plan, risks: refreshedData });
       }
-    } catch (err: any) {
-      alert(`Section regeneration failed: ${err.message || 'Please check Gemini API key configuration.'}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Please check Gemini API key configuration.';
+      alert(`Section regeneration failed: ${message}`);
     } finally {
       setIsRegeneratingSection(null);
     }

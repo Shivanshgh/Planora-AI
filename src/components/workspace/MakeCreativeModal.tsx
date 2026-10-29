@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   X,
   Wand2,
@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { EventPlan, PersonalizedIdeas } from '../../types/event';
 import { apiService } from '../../services/apiService';
+import type { CreativeIdeasResult } from '../../services/apiService';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 interface MakeCreativeModalProps {
   isOpen: boolean;
@@ -25,10 +27,12 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
   plan,
   onAppendIdeas,
 }) => {
-  const [focusArea, setFocusArea] = useState<string>('all');
+  const [focusArea, setFocusArea] = useState<'all' | 'guest-experience' | 'culinary' | 'visual-decor'>('all');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<CreativeIdeasResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  useDialogAccessibility(isOpen, dialogRef, onClose);
 
   if (!isOpen) return null;
 
@@ -38,8 +42,8 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
     try {
       const data = await apiService.makeCreative(plan, focusArea);
       setResult(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate creative concepts');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to generate creative concepts');
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +86,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
+      <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="creative-dialog-title" className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-5 bg-gradient-to-r from-violet-950 via-indigo-900 to-purple-950 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -90,7 +94,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
               <Wand2 className="w-5 h-5 text-violet-100" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Make It More Creative</h3>
+              <h3 id="creative-dialog-title" className="font-bold text-base text-white">Make It More Creative</h3>
               <p className="text-xs text-violet-200">
                 AI brainstorm engine for immersive twists, viral photo corners, and culinary spectacles
               </p>
@@ -98,6 +102,8 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
           </div>
 
           <button
+            type="button"
+            aria-label="Close creative ideas"
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
@@ -142,7 +148,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
               ].map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => setFocusArea(opt.id)}
+                  onClick={() => setFocusArea(opt.id as typeof focusArea)}
                   className={`px-3 py-1 text-xs rounded-lg font-medium transition-colors ${
                     focusArea === opt.id
                       ? 'bg-violet-600 text-white'
@@ -181,7 +187,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
                   <span>Signature Guest Experiences</span>
                 </h4>
                 <div className="space-y-2">
-                  {(result.signatureGuestExperiences || []).map((exp: string, idx: number) => (
+                  {result.signatureGuestExperiences.map((exp, idx) => (
                     <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
                       {exp}
                     </div>
@@ -196,7 +202,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
                   <span>Viral Photo & Video Moments</span>
                 </h4>
                 <div className="space-y-2">
-                  {(result.viralPhotoMoments || []).map((photo: string, idx: number) => (
+                  {result.viralPhotoMoments.map((photo, idx) => (
                     <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
                       {photo}
                     </div>
@@ -211,7 +217,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
                   <span>Interactive Culinary Twists</span>
                 </h4>
                 <div className="space-y-2">
-                  {(result.culinaryTwists || []).map((culinary: string, idx: number) => (
+                  {result.culinaryTwists.map((culinary, idx) => (
                     <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
                       {culinary}
                     </div>
@@ -241,7 +247,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
             </button>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };
