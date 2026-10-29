@@ -97,17 +97,3 @@ server.ts         Express API, Gemini integration, static serving
 - Plans remain in browser local storage. The app does not sync saved data across devices or accounts.
 - Automated tests do not make paid Gemini requests. Verify live generation separately with a valid server-side key and a controlled test event.
 
-## Walkthrough demo script (about 3:30)
-
-- **0:00–0:20 — Intro:** Introduce Planora AI and the wedding, birthday, and community planning use case.
-- **0:20–0:45 — Start an event:** Choose Birthday, enter a date, city, guest count, and budget, then submit a plan request.
-- **0:45–1:20 — Generated plan:** Show the overview and personalized suggestions; identify that the plan was generated live if Gemini is configured.
-- **1:20–1:55 — Budget:** Review INR allocations, edit one expense, and show the updated totals.
-- **1:55–2:25 — Timeline and checklist:** Review deadlines and mark a checklist item complete.
-- **2:25–2:55 — AI feature:** Demonstrate budget optimization or regenerate one plan section.
-- **2:55–3:15 — Saved event:** Refresh, reopen the event, then briefly show edit/duplicate/delete controls.
-- **3:15–3:30 — Close:** Show the running application and print view.
-
-## License
-
-Apache-2.0
