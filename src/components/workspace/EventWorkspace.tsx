@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { lazy, useState } from 'react';
 import {
   LayoutDashboard,
   Wallet,
@@ -33,11 +33,12 @@ import { TimelineTab } from './TimelineTab';
 import { ChecklistTab } from './ChecklistTab';
 import { IdeasTab } from './IdeasTab';
 import { RisksTab } from './RisksTab';
-import { AssistantModal } from './AssistantModal';
-import { OptimizeBudgetModal } from './OptimizeBudgetModal';
-import { MakeCreativeModal } from './MakeCreativeModal';
-import { PrintPlanView } from './PrintPlanView';
 import { apiService } from '../../services/apiService';
+
+const AssistantModal = lazy(() => import('./AssistantModal').then(module => ({ default: module.AssistantModal })));
+const OptimizeBudgetModal = lazy(() => import('./OptimizeBudgetModal').then(module => ({ default: module.OptimizeBudgetModal })));
+const MakeCreativeModal = lazy(() => import('./MakeCreativeModal').then(module => ({ default: module.MakeCreativeModal })));
+const PrintPlanView = lazy(() => import('./PrintPlanView').then(module => ({ default: module.PrintPlanView })));
 
 export type WorkspaceTab = 'overview' | 'budget' | 'timeline' | 'checklist' | 'ideas' | 'risks';
 
@@ -79,6 +80,7 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
 
   // Regeneration loading state for individual sections
   const [isRegeneratingSection, setIsRegeneratingSection] = useState<string | null>(null);
+  const [regenerationError, setRegenerationError] = useState<string | null>(null);
 
   // Quick edit event title/location state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -91,6 +93,8 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
 
   // Handler for regenerating individual section with Gemini
   const handleRegenerateSection = async (section: 'budget' | 'timeline' | 'checklist' | 'ideas' | 'risks') => {
+    if (isRegeneratingSection) return;
+    setRegenerationError(null);
     setIsRegeneratingSection(section);
     try {
       const refreshedData = await apiService.regenerateSection(plan.input, section);
@@ -108,7 +112,7 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Please check Gemini API key configuration.';
-      alert(`Section regeneration failed: ${message}`);
+      setRegenerationError(`Section regeneration failed: ${message}`);
     } finally {
       setIsRegeneratingSection(null);
     }
@@ -292,6 +296,8 @@ export const EventWorkspace: React.FC<EventWorkspaceProps> = ({
           })}
         </div>
       </div>
+
+      {regenerationError && <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{regenerationError}</p>}
 
       {/* Main Tab Content View */}
       {activeTab === 'overview' && (

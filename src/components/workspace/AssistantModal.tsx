@@ -229,7 +229,7 @@ export const AssistantModal: React.FC<AssistantModalProps> = ({
           })}
 
           {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-slate-500 p-2">
+            <div className="flex items-center gap-2 text-xs text-slate-500 p-2" role="status" aria-live="polite">
               <Loader2 className="w-4 h-4 animate-spin text-violet-600" />
               <span>Analyzing event context and composing reply...</span>
             </div>

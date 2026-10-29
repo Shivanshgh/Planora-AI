@@ -18,9 +18,11 @@ export const storageService = {
         return ALL_SAMPLE_PLANS;
       }
       const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
-      console.error('Failed to read events from localStorage:', err);
+      if (!Array.isArray(parsed)) throw new Error('Saved event data is not a list.');
+      return parsed;
+    } catch {
+      console.error('Saved event data was unreadable; restored sample plans.');
+      this.saveAllEvents(ALL_SAMPLE_PLANS);
       return ALL_SAMPLE_PLANS;
     }
   },

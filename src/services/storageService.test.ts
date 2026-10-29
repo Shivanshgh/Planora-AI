@@ -35,9 +35,13 @@ test('saves, updates, duplicates, and removes an event from browser storage', ()
     assert.equal(storageService.getActiveEventId(), 'test-event');
 
     const updated = { ...plan, input: { ...plan.input, name: 'Updated wedding' } };
+    updated.budget = [{ ...updated.budget[0], allocatedAmount: 123456 }];
+    updated.timeline = [{ ...updated.timeline[0], status: 'completed' }];
     storageService.saveEvent(updated);
     assert.equal(storageService.getEvents().filter(event => event.id === 'test-event').length, 1);
     assert.equal(storageService.getEventById('test-event')?.input.name, 'Updated wedding');
+    assert.equal(storageService.getEvents().find(event => event.id === 'test-event')?.budget[0].allocatedAmount, 123456);
+    assert.equal(storageService.getEvents().find(event => event.id === 'test-event')?.timeline[0].status, 'completed');
 
     const duplicate = storageService.duplicateEvent('test-event');
     assert.ok(duplicate);
@@ -46,7 +50,18 @@ test('saves, updates, duplicates, and removes an event from browser storage', ()
 
     storageService.deleteEvent('test-event');
     assert.equal(storageService.getEventById('test-event'), undefined);
+    assert.equal(storageService.getEvents().some(event => event.id === 'test-event'), false);
     assert.ok(storageService.getEventById(duplicate.id));
+  });
+});
+
+test('recovers from invalid saved JSON and persists the sample recovery', () => {
+  withMemoryStorage(() => {
+    localStorage.setItem('planora_ai_events_v1', '{broken');
+    const recovered = storageService.getEvents();
+    assert.ok(recovered.length > 0);
+    assert.deepEqual(storageService.getEvents(), recovered);
+    assert.doesNotThrow(() => JSON.parse(localStorage.getItem('planora_ai_events_v1') || ''));
   });
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Calendar,
   Clock,
@@ -141,19 +141,19 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
   };
 
   // Sort tasks chronologically by due date
-  const sortedTasks = [...(plan.timeline || [])].sort((a, b) => {
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-  });
+  const sortedTasks = useMemo(() => [...(plan.timeline || [])].sort((a, b) =>
+    new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+  ), [plan.timeline]);
 
-  const filteredTasks = sortedTasks.filter(task => {
+  const filteredTasks = useMemo(() => sortedTasks.filter(task => {
     if (filter === 'completed') return task.status === 'completed';
     if (filter === 'pending') return task.status !== 'completed';
     if (filter === 'overdue') return task.status !== 'completed' && isOverdue(task.dueDate);
     return true;
-  });
+  }), [sortedTasks, filter]);
 
-  const completedCount = sortedTasks.filter(t => t.status === 'completed').length;
-  const overdueCount = sortedTasks.filter(t => t.status !== 'completed' && isOverdue(t.dueDate)).length;
+  const completedCount = useMemo(() => sortedTasks.filter(t => t.status === 'completed').length, [sortedTasks]);
+  const overdueCount = useMemo(() => sortedTasks.filter(t => t.status !== 'completed' && isOverdue(t.dueDate)).length, [sortedTasks]);
   const progressPct = sortedTasks.length > 0 ? Math.round((completedCount / sortedTasks.length) * 100) : 0;
 
   const handleToggleStatus = (id: string) => {
@@ -397,6 +397,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   type="text"
+                  aria-label="Task title"
                   placeholder="Task Title (e.g., Finalize Bridal Lehenga / Venue Advance)"
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
@@ -405,6 +406,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                 />
                 <input
                   type="date"
+                  aria-label="Task due date"
                   value={newDueDate}
                   onChange={e => setNewDueDate(e.target.value)}
                   required
@@ -415,6 +417,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   type="text"
+                  aria-label="Task description or notes"
                   placeholder="Description or notes"
                   value={newDescription}
                   onChange={e => setNewDescription(e.target.value)}
@@ -422,6 +425,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                 />
                 <div className="flex gap-2">
                   <select
+                    aria-label="Task priority"
                     value={newPriority}
                     onChange={e => setNewPriority(e.target.value as TimelineTask['priority'])}
                     className="px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-violet-500"
@@ -432,6 +436,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                   </select>
                   <input
                     type="text"
+                    aria-label="Task category"
                     placeholder="Category (e.g. Venue, Decor)"
                     value={newCategory}
                     onChange={e => setNewCategory(e.target.value)}
@@ -633,6 +638,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input
                   type="text"
+                  aria-label="Run-of-show time slot"
                   placeholder="Time Slot (e.g. 04:30 PM)"
                   value={newRosTime}
                   onChange={e => setNewRosTime(e.target.value)}
@@ -641,6 +647,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                 />
                 <input
                   type="text"
+                  aria-label="Run-of-show title"
                   placeholder="Itinerary Title (e.g. Sunset Varmala Exchange)"
                   value={newRosTitle}
                   onChange={e => setNewRosTitle(e.target.value)}
@@ -652,6 +659,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input
                   type="text"
+                  aria-label="Run-of-show assigned lead or team"
                   placeholder="Assigned Lead / Team (e.g. Emcee & Decorator)"
                   value={newRosAssigned}
                   onChange={e => setNewRosAssigned(e.target.value)}
@@ -659,6 +667,7 @@ export const TimelineTab: React.FC<TimelineTabProps> = ({
                 />
                 <input
                   type="text"
+                  aria-label="Run-of-show description"
                   placeholder="Logistical description, instructions or cue"
                   value={newRosDesc}
                   onChange={e => setNewRosDesc(e.target.value)}

@@ -124,6 +124,14 @@ export const EventForm: React.FC<EventFormProps> = ({
     if (!totalBudget || totalBudget < 5000) errors.totalBudget = 'Minimum budget is ₹5,000';
 
     setValidationErrors(errors);
+    const firstInvalidField = Object.keys(errors)[0];
+    if (firstInvalidField) {
+      const fieldIds: Record<string, string> = {
+        name: 'event-name', date: 'event-date', city: 'event-city',
+        guestCount: 'event-guests', totalBudget: 'event-budget',
+      };
+      document.getElementById(fieldIds[firstInvalidField])?.focus();
+    }
     return Object.keys(errors).length === 0;
   };
 
@@ -214,6 +222,7 @@ export const EventForm: React.FC<EventFormProps> = ({
               <button
                 key={s.num}
                 type="button"
+                aria-current={isCurrent ? 'step' : undefined}
                 onClick={() => {
                   if (s.num === 1 || validateStep1()) {
                     setStep(s.num as 1 | 2 | 3);
@@ -244,8 +253,11 @@ export const EventForm: React.FC<EventFormProps> = ({
         </div>
       </div>
 
+      <p className="sr-only" role="status" aria-live="polite">Step {step} of 3: {['Event Essentials', 'Style & Logistics', 'Priorities & Run'][step - 1]}</p>
+      <p className="sr-only" role="status" aria-live="polite">{isLoading ? 'Generating your event plan. This may take a moment.' : ''}</p>
+
       {/* Main Form Box */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+      <form onSubmit={handleSubmit} aria-busy={isLoading} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
         {/* Error notification if any */}
         {error && (
           <div role="alert" aria-live="assertive" className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs sm:text-sm space-y-3">
@@ -289,12 +301,13 @@ export const EventForm: React.FC<EventFormProps> = ({
           <div className="space-y-6">
             {/* Event Name */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="event-name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Event Name <span className="text-red-500">*</span>
               </label>
               <input
-                aria-label="Event name"
+                id="event-name"
                 aria-invalid={Boolean(validationErrors.name)}
+                aria-describedby={validationErrors.name ? 'event-name-error' : undefined}
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -306,13 +319,13 @@ export const EventForm: React.FC<EventFormProps> = ({
                 }`}
               />
               {validationErrors.name && (
-                <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.name}</p>
+                <p id="event-name-error" className="text-xs text-red-600 mt-1" role="alert">{validationErrors.name}</p>
               )}
             </div>
 
             {/* Event Type Grid Selection */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+            <div role="group" aria-labelledby="event-category-label">
+              <label id="event-category-label" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                 Event Category <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -361,13 +374,14 @@ export const EventForm: React.FC<EventFormProps> = ({
             {/* Date, City, Guest Count */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-date" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Target Date <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
-                    aria-label="Target event date"
+                    id="event-date"
                     aria-invalid={Boolean(validationErrors.date)}
+                    aria-describedby={validationErrors.date ? 'event-date-error' : undefined}
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
@@ -375,18 +389,19 @@ export const EventForm: React.FC<EventFormProps> = ({
                   />
                 </div>
                 {validationErrors.date && (
-                  <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.date}</p>
+                  <p id="event-date-error" className="text-xs text-red-600 mt-1" role="alert">{validationErrors.date}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-city" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   City / Location <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
-                    aria-label="City or event location"
+                    id="event-city"
                     aria-invalid={Boolean(validationErrors.city)}
+                    aria-describedby={validationErrors.city ? 'event-city-error' : undefined}
                     type="text"
                     value={city}
                     onChange={e => setCity(e.target.value)}
@@ -395,17 +410,18 @@ export const EventForm: React.FC<EventFormProps> = ({
                   />
                 </div>
                 {validationErrors.city && (
-                  <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.city}</p>
+                  <p id="event-city-error" className="text-xs text-red-600 mt-1" role="alert">{validationErrors.city}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-guests" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Estimated Guests <span className="text-red-500">*</span>
                 </label>
                 <input
-                  aria-label="Estimated guest count"
+                  id="event-guests"
                   aria-invalid={Boolean(validationErrors.guestCount)}
+                  aria-describedby={validationErrors.guestCount ? 'event-guests-error' : undefined}
                   type="number"
                   min="5"
                   max="10000"
@@ -414,7 +430,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                 />
                 {validationErrors.guestCount && (
-                  <p className="text-xs text-red-600 mt-1" role="alert">{validationErrors.guestCount}</p>
+                  <p id="event-guests-error" className="text-xs text-red-600 mt-1" role="alert">{validationErrors.guestCount}</p>
                 )}
               </div>
             </div>
@@ -422,7 +438,7 @@ export const EventForm: React.FC<EventFormProps> = ({
             {/* Total Budget in INR with Indian formatting indicator */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label htmlFor="event-budget" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Total Budget (in Indian Rupees ₹) <span className="text-red-500">*</span>
                 </label>
                 <div className="text-base font-extrabold text-violet-700 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
@@ -431,8 +447,9 @@ export const EventForm: React.FC<EventFormProps> = ({
               </div>
 
               <input
-                aria-label="Total event budget in Indian rupees"
+                id="event-budget"
                 aria-invalid={Boolean(validationErrors.totalBudget)}
+                aria-describedby={validationErrors.totalBudget ? 'event-budget-error' : undefined}
                 type="number"
                 min="5000"
                 step="5000"
@@ -440,6 +457,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 onChange={e => setTotalBudget(Number(e.target.value))}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
               />
+              {validationErrors.totalBudget && <p id="event-budget-error" className="text-xs text-red-600" role="alert">{validationErrors.totalBudget}</p>}
 
               {/* Quick budget chip selector */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -483,11 +501,11 @@ export const EventForm: React.FC<EventFormProps> = ({
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-duration" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Event Duration (Hours)
                 </label>
                 <input
-                  aria-label="Event duration in hours"
+                  id="event-duration"
                   type="number"
                   min="1"
                   max="48"
@@ -498,11 +516,11 @@ export const EventForm: React.FC<EventFormProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-setting" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Venue Setting
                 </label>
                 <select
-                  aria-label="Venue setting"
+                  id="event-setting"
                   value={setting}
                   onChange={e => setSetting(e.target.value as SettingType)}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
@@ -517,11 +535,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 
             {/* Theme / Style */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="event-theme" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Preferred Theme / Visual Mood
               </label>
               <input
-                aria-label="Preferred event theme"
+                id="event-theme"
                 type="text"
                 value={theme}
                 onChange={e => setTheme(e.target.value)}
@@ -535,11 +553,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 
             {/* Dietary & Catering Preferences */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="event-dietary" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Dietary & Catering Preferences
               </label>
               <textarea
-                aria-label="Dietary and catering preferences"
+                id="event-dietary"
                 rows={2}
                 value={dietary}
                 onChange={e => setDietary(e.target.value)}
@@ -551,11 +569,11 @@ export const EventForm: React.FC<EventFormProps> = ({
             {/* Cultural or Regional Background */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-culture" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Cultural or Regional Preferences
                 </label>
                 <input
-                    aria-label="Cultural or regional preferences"
+                  id="event-culture"
                   type="text"
                   value={cultural}
                   onChange={e => setCultural(e.target.value)}
@@ -565,11 +583,11 @@ export const EventForm: React.FC<EventFormProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                <label htmlFor="event-language" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                   Communication Language & Tone
                 </label>
                 <input
-                    aria-label="Communication language and tone"
+                  id="event-language"
                   type="text"
                   value={language}
                   onChange={e => setLanguage(e.target.value)}
@@ -585,11 +603,11 @@ export const EventForm: React.FC<EventFormProps> = ({
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="event-activities" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Must-Have Activities & Highlights
               </label>
               <textarea
-                aria-label="Must-have activities and highlights"
+                id="event-activities"
                 rows={2}
                 value={mustHaveActivities}
                 onChange={e => setMustHaveActivities(e.target.value)}
@@ -599,11 +617,11 @@ export const EventForm: React.FC<EventFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label htmlFor="event-requirements" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Special Requirements & Inclusivity
               </label>
               <textarea
-                aria-label="Special requirements and accessibility needs"
+                id="event-requirements"
                 rows={2}
                 value={specialRequirements}
                 onChange={e => setSpecialRequirements(e.target.value)}

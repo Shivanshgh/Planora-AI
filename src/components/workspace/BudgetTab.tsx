@@ -465,6 +465,7 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="text"
+                aria-label="New budget category"
                 placeholder="Category Name (e.g., Security, Valet)"
                 value={newCategory}
                 onChange={e => setNewCategory(e.target.value)}
@@ -473,6 +474,7 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
               />
               <input
                 type="number"
+                aria-label="New category amount in Indian rupees"
                 placeholder="Amount in INR"
                 value={newAmount}
                 onChange={e => setNewAmount(Number(e.target.value))}
@@ -481,6 +483,7 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
               />
               <input
                 type="text"
+                aria-label="New category explanation"
                 placeholder="Short explanation"
                 value={newExplanation}
                 onChange={e => setNewExplanation(e.target.value)}
@@ -560,6 +563,7 @@ export const BudgetTab: React.FC<BudgetTabProps> = ({
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
+                          aria-label={`Allocated amount for ${item.category}`}
                           step="1000"
                           value={editAmount}
                           onChange={e => setEditAmount(Number(e.target.value))}

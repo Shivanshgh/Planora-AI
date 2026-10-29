@@ -116,9 +116,9 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
           {/* Controls */}
           <div className="bg-violet-50/60 p-4 rounded-xl border border-violet-200 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="text-xs font-bold text-violet-950 uppercase tracking-wider">
+              <span className="text-xs font-bold text-violet-950 uppercase tracking-wider" id="creative-focus-label">
                 Select Creative Focus:
-              </label>
+              </span>
 
               <button
                 onClick={handleGenerate}
@@ -139,7 +139,7 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="creative-focus-label">
               {[
                 { id: 'all', label: 'All Dimensions' },
                 { id: 'guest-experience', label: 'Guest Touchpoints' },
@@ -148,6 +148,8 @@ export const MakeCreativeModal: React.FC<MakeCreativeModalProps> = ({
               ].map(opt => (
                 <button
                   key={opt.id}
+                  type="button"
+                  aria-pressed={focusArea === opt.id}
                   onClick={() => setFocusArea(opt.id as typeof focusArea)}
                   className={`px-3 py-1 text-xs rounded-lg font-medium transition-colors ${
                     focusArea === opt.id

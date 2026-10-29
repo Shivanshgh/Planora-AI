@@ -26,27 +26,42 @@ export class ApiError extends Error {
   }
 }
 
-async function requestJSON<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, body === undefined ? undefined : {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  let data: unknown;
+export async function requestJSON<T>(url: string, body?: unknown, timeoutMs = 120_000): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    data = await response.json();
-  } catch {
-    throw new ApiError('The server returned an unreadable response. Please retry.', response.status);
-  }
+    const response = await fetch(url, {
+      ...(body === undefined ? {} : {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const payload = typeof data === 'object' && data !== null ? data as { error?: unknown; details?: unknown } : {};
-    const message = typeof payload.error === 'string' ? payload.error : 'The request could not be completed.';
-    throw new ApiError(message, response.status, payload.details);
-  }
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new ApiError('The server returned an unreadable response. Please retry.', response.status);
+    }
 
-  return data as T;
+    if (!response.ok) {
+      const payload = typeof data === 'object' && data !== null ? data as { error?: unknown; details?: unknown } : {};
+      const message = typeof payload.error === 'string' ? payload.error : 'The request could not be completed.';
+      throw new ApiError(message, response.status, payload.details);
+    }
+
+    return data as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError('The request took too long. Please retry.', 408);
+    }
+    throw new ApiError('Unable to reach the server. Check your connection and retry.', 0);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export interface HealthStatus {

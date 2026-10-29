@@ -148,7 +148,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
           {/* Controls */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <label htmlFor="savings-target" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Desired Savings Target: {savingsTarget}% (~{formatINR(Math.round((plan.input.totalBudget * savingsTarget) / 100))})
               </label>
 
@@ -172,6 +172,7 @@ export const OptimizeBudgetModal: React.FC<OptimizeBudgetModalProps> = ({
             </div>
 
             <input
+              id="savings-target"
               type="range"
               min="5"
               max="35"

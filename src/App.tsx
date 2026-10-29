@@ -5,7 +5,6 @@ import type { WorkspaceTab } from './components/workspace/EventWorkspace';
 import type { EventPlan, EventInput } from './types/event';
 import { storageService } from './services/storageService';
 import { apiService } from './services/apiService';
-import { SAMPLE_WEDDING_PLAN } from './utils/sampleData';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard').then(module => ({ default: module.Dashboard })));
 const EventForm = lazy(() => import('./components/planner/EventForm').then(module => ({ default: module.EventForm })));
@@ -22,6 +21,7 @@ export default function App() {
   const [activePlan, setActivePlan] = useState<EventPlan | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
   const [hasApiKey, setHasApiKey] = useState<boolean>(true);
 
   // Mobile navigation drawer
@@ -57,8 +57,10 @@ export default function App() {
   };
 
   const handleCreatePlan = async (input: EventInput) => {
+    if (isLoading) return;
     setIsLoading(true);
     setError(null);
+    setAnnouncement('');
     try {
       const newPlan = await apiService.generatePlan(input);
       const saved = storageService.saveEvent(newPlan);
@@ -66,6 +68,7 @@ export default function App() {
       setActivePlan(saved);
       setCurrentView('dashboard');
       setWorkspaceTab('overview');
+      setAnnouncement('Event plan created and saved.');
 
       // Celebration confetti
       try {
@@ -251,6 +254,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 selection:bg-violet-100 selection:text-violet-900">
+      <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-slate-900 focus:shadow-lg">
         Skip to main content
       </a>
@@ -285,6 +289,7 @@ export default function App() {
           }}
           onPrint={() => setIsPrintModalOpen(true)}
           hasApiKey={hasApiKey}
+          isMobileMenuOpen={isMobileMenuOpen}
         />
 
         <main id="main-content" tabIndex={-1} className="flex-1 pb-16">

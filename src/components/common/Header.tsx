@@ -18,6 +18,7 @@ interface HeaderProps {
   onPlanNew: () => void;
   onPrint: () => void;
   hasApiKey: boolean;
+  isMobileMenuOpen: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   onPlanNew,
   onPrint,
   hasApiKey,
+  isMobileMenuOpen,
 }) => {
   const getViewTitle = () => {
     switch (currentView) {
@@ -62,6 +64,8 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onOpenMobileMenu}
           className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           aria-label="Open navigation menu"
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="mobile-navigation"
         >
           <Menu className="w-5 h-5" />
         </button>

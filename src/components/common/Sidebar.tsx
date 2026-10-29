@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   LayoutDashboard,
   Sparkles,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { EventPlan } from '../../types/event';
 import { formatINR } from '../../utils/formatters';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 export type NavView =
   | 'dashboard'
@@ -45,6 +46,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
+  const mobileNavigationRef = useRef<HTMLDivElement | null>(null);
+  useDialogAccessibility(isOpenMobile, mobileNavigationRef, onCloseMobile);
   // Core navigation items covering all Prompt Wars pillars:
   // 1. Dashboard, 2. Plan an Event, 3. My Events, 4. Budget Planner, 5. Timeline & Tasks, 6. Vendor Checklist
   const coreNavItems: { id: NavView; label: string; icon: React.ElementType }[] = [
@@ -86,6 +89,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
         {isOpenMobile && (
           <button
+            type="button"
+            aria-label="Close navigation menu"
             onClick={onCloseMobile}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
           >
@@ -232,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             onClick={onCloseMobile}
           />
-          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl">
+          <div id="mobile-navigation" ref={mobileNavigationRef} role="dialog" aria-modal="true" aria-label="Navigation menu" tabIndex={-1} className="relative w-72 max-w-[85vw] h-full shadow-2xl">
             {navContent}
           </div>
         </div>

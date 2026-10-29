@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { ApiError, apiService } from './apiService';
+import { ApiError, apiService, requestJSON } from './apiService';
 
 async function withMockFetch(mock: typeof fetch, run: () => Promise<void>): Promise<void> {
   const originalFetch = globalThis.fetch;
@@ -31,6 +31,30 @@ test('reports unreadable server responses without exposing response contents', a
     await assert.rejects(
       apiService.askAssistant(null, [], 'Help me plan'),
       error => error instanceof ApiError && error.status === 502 && error.message === 'The server returned an unreadable response. Please retry.'
+    );
+  });
+});
+
+test('returns parsed data for successful API requests', async () => {
+  await withMockFetch(async () => new Response(JSON.stringify({ reply: 'A practical plan.' }), { status: 200 }), async () => {
+    assert.deepEqual(await requestJSON('/api/test'), { reply: 'A practical plan.' });
+  });
+});
+
+test('maps network timeouts to a retryable API error', async () => {
+  await withMockFetch((_input, init) => new Promise((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+  }), async () => {
+    await assert.rejects(requestJSON('/api/test', undefined, 5), error =>
+      error instanceof ApiError && error.status === 408 && error.message.includes('too long')
+    );
+  });
+});
+
+test('returns a safe message for server errors', async () => {
+  await withMockFetch(async () => new Response(JSON.stringify({ error: 'Service unavailable.' }), { status: 503 }), async () => {
+    await assert.rejects(requestJSON('/api/test'), error =>
+      error instanceof ApiError && error.status === 503 && error.message === 'Service unavailable.'
     );
   });
 });
